@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Física//Lab — Entrenador de Fórmulas</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f14;--surface:#151820;--surface2:#1c2030;--border:#2a2f3f;
+  --accent:#5b8dee;--accent2:#e85d8a;--gold:#f5c842;--text:#e8eaf0;
+  --muted:#6b7280;--green:#3ecf8e;--red:#f87171;
+  --mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh}
+.app{max-width:480px;margin:0 auto;padding-bottom:40px}
+.header{padding:18px 24px 0;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-size:13px;color:var(--accent);letter-spacing:.5px}
+.score-pill{display:flex;align-items:center;gap:12px}
+.pts{font-family:var(--mono);font-size:13px;color:var(--gold)}
+.streak{font-size:12px;color:var(--muted)}
+.screen{display:none;padding:20px 24px 32px}
+.screen.active{display:block}
+.hero{text-align:center;padding:20px 0 16px}
+.hero-label{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px}
+.hero-title{font-size:24px;font-weight:600;line-height:1.2;margin-bottom:6px}
+.hero-title em{color:var(--accent2);font-style:normal}
+.hero-sub{font-size:13px;color:var(--muted);line-height:1.6}
+.section-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1.5px;margin-bottom:8px;margin-top:14px}
+.topic-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.topic-btn{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 13px;cursor:pointer;text-align:left;transition:all .2s;color:var(--text)}
+.topic-btn:hover{border-color:var(--accent);background:var(--surface2)}
+.topic-btn.sel{border-color:var(--accent);background:linear-gradient(135deg,rgba(91,141,238,.12),rgba(91,141,238,.04))}
+.topic-btn.sel .t-icon{color:var(--accent)}
+.t-icon{font-family:var(--mono);font-size:15px;display:block;margin-bottom:4px;color:var(--muted);transition:color .2s}
+.t-name{font-size:13px;font-weight:500}
+.t-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.diff-row{display:flex;gap:6px}
+.diff-btn{flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .2s;letter-spacing:.5px}
+.diff-btn:hover{border-color:var(--accent2);color:var(--text)}
+.diff-btn.sel{border-color:var(--accent2);color:var(--accent2);background:rgba(232,93,138,.08)}
+.play-btn{width:100%;margin-top:16px;padding:13px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-family:var(--sans);font-size:15px;font-weight:600;cursor:pointer;transition:all .2s}
+.play-btn:hover{background:#4a7de8;transform:translateY(-1px)}
+.play-btn:disabled{background:var(--border);color:var(--muted);cursor:not-allowed;transform:none}
+.loading-wrap{text-align:center;padding:60px 0}
+.load-ring{width:40px;height:40px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-txt{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.q-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.q-tag{font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:20px;background:rgba(91,141,238,.12);color:var(--accent);border:1px solid rgba(91,141,238,.25)}
+.q-timer{font-family:var(--mono);font-size:14px;color:var(--gold)}
+.q-timer.low{color:var(--red);animation:pulse .5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.hint-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px}
+.hint-label{font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:1px;margin-bottom:8px}
+.hint-formula{font-family:var(--mono);font-size:15px;color:var(--gold);letter-spacing:1px;line-height:2}
+.hint-formula .blank{display:inline-block;min-width:28px;border-bottom:2px solid var(--accent2);color:var(--accent2);text-align:center;font-style:italic}
+.q-text-box{margin-bottom:12px}
+.q-label{font-size:11px;color:var(--muted);margin-bottom:6px;font-family:var(--mono);letter-spacing:.5px}
+.q-problem{font-size:14px;color:var(--text);line-height:1.65;background:var(--surface2);border-radius:10px;padding:13px}
+.answer-row{display:flex;gap:8px;margin-bottom:10px}
+.answer-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:var(--mono);font-size:14px;outline:none;transition:border-color .2s}
+.answer-input:focus{border-color:var(--accent)}
+.answer-input.correct{border-color:var(--green);background:rgba(62,207,142,.07)}
+.answer-input.wrong{border-color:var(--red);background:rgba(248,113,113,.07)}
+.check-btn{padding:10px 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.check-btn:hover{background:#4a7de8}
+.hint-toggle{font-family:var(--mono);font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:6px;padding:6px 12px;cursor:pointer;width:100%;margin-bottom:10px;transition:all .2s}
+.hint-toggle:hover{border-color:var(--accent);color:var(--accent)}
+.feedback-card{border-radius:12px;padding:14px;margin-bottom:12px;display:none}
+.feedback-card.ok{background:rgba(62,207,142,.08);border:1px solid rgba(62,207,142,.25)}
+.feedback-card.fail{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25)}
+.fb-head{font-size:13px;font-weight:600;margin-bottom:8px}
+.fb-head.ok{color:var(--green)}
+.fb-head.fail{color:var(--red)}
+.fb-steps{font-size:12px;color:var(--muted);line-height:1.8;font-family:var(--mono)}
+.next-btn{width:100%;padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;display:none}
+.next-btn:hover{border-color:var(--accent);background:var(--surface2)}
+.res-center{text-align:center;padding:20px 0 14px}
+.res-big{font-family:var(--mono);font-size:52px;font-weight:700;color:var(--gold);line-height:1}
+.res-sub{font-size:13px;color:var(--muted);margin-top:6px;margin-bottom:18px}
+.res-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
+.res-stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
+.res-n{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--text)}
+.res-l{font-size:11px;color:var(--muted);margin-top:3px}
+.res-btns{display:flex;gap:8px}
+.res-btns button{flex:1;padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;cursor:pointer;transition:all .2s}
+.res-btns button:hover{border-color:var(--accent);background:var(--surface2)}
+.res-btns button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.res-btns button.primary:hover{background:#4a7de8}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="header">
+  <span class="logo">FÍSICA//LAB</span>
+  <div class="score-pill">
+    <span class="pts" id="hdr-pts">0 pts</span>
+    <span class="streak" id="hdr-streak"></span>
+  </div>
+</div>
+
+<!-- HOME -->
+<div class="screen active" id="s-home">
+  <div class="hero">
+    <div class="hero-label">ENTRENADOR DE FÓRMULAS</div>
+    <h1 class="hero-title">Completa la fórmula,<br><em>resuelve el problema</em></h1>
+    <p class="hero-sub">La IA genera ejercicios únicos. Te da la pista de la fórmula y tú la completas. Si fallas, te explica paso a paso.</p>
+  </div>
+
+  <div class="section-label">TEMA</div>
+  <div class="topic-grid">
+    <div class="topic-btn" onclick="selTopic('cinematica',this)">
+      <span class="t-icon">x(t)</span>
+      <div class="t-name">Cinemática</div>
+      <div class="t-sub">MRU · MRUV · caída libre</div>
+    </div>
+    <div class="topic-btn" onclick="selTopic('dinamica',this)">
+      <span class="t-icon">ΣF</span>
+      <div class="t-name">Dinámica</div>
+      <div class="t-sub">Leyes de Newton · fricción</div>
+    </div>
+    <div class="topic-btn" onclick="selTopic('trabajo',this)">
+      <span class="t-icon">W·E</span>
+      <div class="t-name">Trabajo y Energía</div>
+      <div class="t-sub">Trabajo · E. cinética · potencial</div>
+    </div>
+    <div class="topic-btn" onclick="selTopic('electricidad',this)">
+      <span class="t-icon">∮E</span>
+      <div class="t-name">Electricidad</div>
+      <div class="t-sub">Ohm · circuitos · potencia</div>
+    </div>
+    <div class="topic-btn" onclick="selTopic('termodinamica',this)">
+      <span class="t-icon">ΔS</span>
+      <div class="t-name">Termodinámica</div>
+      <div class="t-sub">Gas ideal · leyes termodinámicas</div>
+    </div>
+    <div class="topic-btn" onclick="selTopic('ondas',this)">
+      <span class="t-icon">∿∿</span>
+      <div class="t-name">Ondas</div>
+      <div class="t-sub">Frecuencia · longitud · velocidad</div>
+    </div>
+    <div class="topic-btn" onclick="selTopic('optica',this)">
+      <span class="t-icon">λ→</span>
+      <div class="t-name">Óptica</div>
+      <div class="t-sub">Snell · lentes · espejos</div>
+    </div>
+    <div class="topic-btn" onclick="selTopic('cantidad',this)">
+      <span class="t-icon">p=mv</span>
+      <div class="t-name">Cantidad de movimiento</div>
+      <div class="t-sub">Impulso · colisiones · conservación</div>
+    </div>
+    <div class="topic-btn" onclick="selTopic('todo',this)" style="grid-column:1/-1">
+      <span class="t-icon" style="font-size:12px">∀</span>
+      <div class="t-name">Mix aleatorio</div>
+      <div class="t-sub">Todos los temas mezclados</div>
+    </div>
+  </div>
+
+  <div class="section-label" style="margin-top:16px">DIFICULTAD</div>
+  <div class="diff-row">
+    <button class="diff-btn" onclick="selDiff('basico',this)">BÁSICO</button>
+    <button class="diff-btn" onclick="selDiff('intermedio',this)">INTERMEDIO</button>
+    <button class="diff-btn" onclick="selDiff('avanzado',this)">AVANZADO</button>
+  </div>
+  <button class="play-btn" id="play-btn" disabled onclick="startGame()">Selecciona tema y dificultad</button>
+</div>
+
+<!-- LOADING -->
+<div class="screen" id="s-load">
+  <div class="loading-wrap">
+    <div class="load-ring"></div>
+    <div class="load-txt" id="load-msg">Generando ejercicio...</div>
+  </div>
+</div>
+
+<!-- QUESTION -->
+<div class="screen" id="s-q">
+  <div class="q-meta">
+    <span class="q-tag" id="q-tag">Cinemática</span>
+    <span class="q-timer" id="q-timer">45</span>
+  </div>
+  <div class="hint-box">
+    <div class="hint-label">PISTA — ESTRUCTURA DE LA FÓRMULA</div>
+    <div class="hint-formula" id="hint-formula">v = v₀ + ___ · t</div>
+  </div>
+  <div class="q-text-box">
+    <div class="q-label">PROBLEMA</div>
+    <div class="q-problem" id="q-problem">Cargando...</div>
+  </div>
+  <button class="hint-toggle" id="hint-toggle-btn" onclick="toggleExtraHint()">+ Mostrar pista adicional</button>
+  <div id="extra-hint" style="display:none;font-family:var(--mono);font-size:12px;color:var(--accent);background:rgba(91,141,238,.07);border:1px solid rgba(91,141,238,.2);border-radius:8px;padding:10px;margin-bottom:10px"></div>
+  <div class="answer-row">
+    <input class="answer-input" id="answer-input" type="text" placeholder="Tu respuesta (ej: 12.5 m)" onkeydown="if(event.key==='Enter')checkAnswer()">
+    <button class="check-btn" onclick="checkAnswer()">Verificar</button>
+  </div>
+  <div class="feedback-card" id="feedback-card">
+    <div class="fb-head" id="fb-head"></div>
+    <div class="fb-steps" id="fb-steps"></div>
+  </div>
+  <button class="next-btn" id="next-btn" onclick="nextQ()">Siguiente ejercicio →</button>
+</div>
+
+<!-- RESULTS -->
+<div class="screen" id="s-res">
+  <div class="res-center">
+    <div class="res-big" id="res-pts">0</div>
+    <div class="res-sub" id="res-msg">puntos</div>
+  </div>
+  <div class="res-grid">
+    <div class="res-stat"><div class="res-n" id="res-ok">0</div><div class="res-l">Correctas</div></div>
+    <div class="res-stat"><div class="res-n" id="res-bad">0</div><div class="res-l">Incorrectas</div></div>
+    <div class="res-stat"><div class="res-n" id="res-stk">0</div><div class="res-l">Racha máx.</div></div>
+  </div>
+  <div class="res-btns">
+    <button onclick="goHome()">Cambiar tema</button>
+    <button class="primary" onclick="startGame()">Jugar de nuevo</button>
+  </div>
+</div>
+</div>
+
+<script>
+const TOTAL=5,TIME=45;
+let st={topic:null,diff:null,q:null,qNum:0,score:0,correct:0,wrong:0,streak:0,maxStreak:0,timer:null,timeLeft:TIME,answered:false,extraShown:false};
+
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+function selTopic(t,el){st.topic=t;document.querySelectorAll('.topic-btn').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');checkReady()}
+function selDiff(d,el){st.diff=d;document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');checkReady()}
+function checkReady(){const b=document.getElementById('play-btn');if(st.topic&&st.diff){b.disabled=false;b.textContent='¡Comenzar!'}else{b.disabled=true;b.textContent='Selecciona tema y dificultad'}}
+
+const topicPrompts={
+  cinematica:`Cinemática: MRU (x=x₀+v·t), MRUV (v=v₀+a·t, x=x₀+v₀t+½at², v²=v₀²+2aΔx), caída libre, tiro parabólico.`,
+  dinamica:`Dinámica: Leyes de Newton (F=ma), rozamiento (f=μN), peso (W=mg), plano inclinado, tensión.`,
+  trabajo:`Trabajo y Energía: W=F·d·cosθ, Ec=½mv², Ep=mgh, conservación de energía, potencia P=W/t.`,
+  electricidad:`Electricidad: V=IR, P=VI=I²R, circuitos serie/paralelo, energía eléctrica E=Pt, condensadores Q=CV.`,
+  termodinamica:`Termodinámica: PV=nRT, ΔU=Q-W, W=PΔV, Q=mcΔT, procesos termodinámicos, eficiencia de Carnot.`,
+  ondas:`Ondas: v=λf, T=1/f, efecto Doppler f'=f·(v±vo)/(v±vs), intensidad, onda estacionaria.`,
+  optica:`Óptica: Snell n₁sinθ₁=n₂sinθ₂, lentes 1/f=1/do+1/di, aumento m=-di/do, ángulo crítico, n=c/v.`,
+  cantidad:`Cantidad de movimiento: p=mv, J=FΔt=Δp, conservación p₁+p₂=p₁'+p₂', colisiones elásticas e inelásticas.`
+};
+const allTopics=Object.keys(topicPrompts);
+const diffMap={basico:'básico (fórmula directa, una incógnita)',intermedio:'intermedio (dos pasos)',avanzado:'avanzado (múltiples pasos)'};
+
+async function startGame(){
+  st.qNum=0;st.score=0;st.correct=0;st.wrong=0;st.streak=0;st.maxStreak=0;
+  updateHdr();await loadQ();
+}
+
+async function loadQ(){
+  show('s-load');
+  const msgs=['Generando ejercicio único...','La IA está calculando...','Preparando la fórmula...','Casi listo...'];
+  document.getElementById('load-msg').textContent=msgs[st.qNum%msgs.length];
+  const chosen=st.topic==='todo'?allTopics[Math.floor(Math.random()*allTopics.length)]:st.topic;
+  const desc=topicPrompts[chosen];
+
+  const prompt=`Eres un profesor de física universitaria. Crea un ejercicio sobre: ${desc}\nNivel: ${diffMap[st.diff]}\n\nResponde SOLO con JSON válido, sin markdown:\n{\n  "subtopic": "nombre corto del subtema",\n  "formula_hint": "fórmula con UN espacio en blanco como ___",\n  "extra_hint": "descripción de qué va en el espacio en blanco",\n  "problem": "enunciado con datos numéricos",\n  "answer": "valor con unidades",\n  "answer_numeric": numero,\n  "tolerance": porcentaje_3_a_8,\n  "steps": ["paso 1","paso 2","paso 3"]\n}`;
+
+  try{
+    const res=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:900,messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    let txt=data.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
+    st.q=JSON.parse(txt);
+  }catch(e){st.q=fallback(chosen);}
+  renderQ();
+}
+
+function renderQ(){
+  show('s-q');
+  st.answered=false;st.extraShown=false;st.timeLeft=TIME;
+  const q=st.q;
+  document.getElementById('q-tag').textContent=q.subtopic;
+  document.getElementById('hint-formula').innerHTML=q.formula_hint.replace(/___/g,'<span class="blank">___</span>');
+  document.getElementById('q-problem').textContent=q.problem;
+  document.getElementById('extra-hint').textContent=q.extra_hint;
+  document.getElementById('extra-hint').style.display='none';
+  document.getElementById('hint-toggle-btn').textContent='+ Mostrar pista adicional';
+  document.getElementById('feedback-card').style.display='none';
+  document.getElementById('next-btn').style.display='none';
+  const inp=document.getElementById('answer-input');
+  inp.value='';inp.disabled=false;inp.className='answer-input';inp.focus();
+  clearInterval(st.timer);
+  st.timer=setInterval(()=>{
+    st.timeLeft--;
+    const el=document.getElementById('q-timer');
+    el.textContent=st.timeLeft;
+    el.className='q-timer'+(st.timeLeft<=10?' low':'');
+    if(st.timeLeft<=0){clearInterval(st.timer);autoFail();}
+  },1000);
+}
+
+function toggleExtraHint(){
+  st.extraShown=!st.extraShown;
+  document.getElementById('extra-hint').style.display=st.extraShown?'block':'none';
+  document.getElementById('hint-toggle-btn').textContent=st.extraShown?'— Ocultar pista':'+ Mostrar pista adicional';
+}
+
+function checkAnswer(){
+  if(st.answered)return;
+  const raw=document.getElementById('answer-input').value.trim();
+  if(!raw)return;
+  const num=parseFloat(raw.replace(',','.'));
+  const q=st.q;
+  const tol=(q.tolerance||5)/100;
+  const isOk=!isNaN(num)&&Math.abs(num-q.answer_numeric)/(Math.abs(q.answer_numeric)||1)<=tol;
+  submitAnswer(isOk);
+}
+
+function autoFail(){if(st.answered)return;submitAnswer(false,true);}
+
+function submitAnswer(ok,timeout=false){
+  st.answered=true;clearInterval(st.timer);
+  const q=st.q;
+  const inp=document.getElementById('answer-input');
+  inp.disabled=true;inp.className='answer-input '+(ok?'correct':'wrong');
+  const timeBonus=ok?Math.floor(st.timeLeft/5):0;
+  const diffBonus={basico:10,intermedio:20,avanzado:35}[st.diff]||10;
+  if(ok){
+    st.score+=diffBonus+timeBonus;st.correct++;st.streak++;st.maxStreak=Math.max(st.maxStreak,st.streak);
+    showFeedback(true,`¡Correcto! +${diffBonus+timeBonus} pts${timeBonus?` (incluye +${timeBonus} por velocidad)`:''}`,q.steps);
+  }else{
+    st.wrong++;st.streak=0;
+    showFeedback(false,`${timeout?'Tiempo agotado.':'Respuesta incorrecta.'} La respuesta es ${q.answer}.`,q.steps);
+  }
+  updateHdr();
+  const nb=document.getElementById('next-btn');
+  nb.style.display='block';
+  nb.textContent=st.qNum+1<TOTAL?'Siguiente ejercicio →':'Ver resultados →';
+}
+
+function showFeedback(ok,head,steps){
+  const card=document.getElementById('feedback-card');
+  card.className='feedback-card '+(ok?'ok':'fail');
+  card.style.display='block';
+  document.getElementById('fb-head').textContent=head;
+  document.getElementById('fb-head').className='fb-head '+(ok?'ok':'fail');
+  document.getElementById('fb-steps').innerHTML=steps.map((s,i)=>`<div style="margin-bottom:5px"><span style="color:${ok?'var(--green)':'var(--accent)'}">0${i+1}.</span> ${s}</div>`).join('');
+}
+
+async function nextQ(){
+  st.qNum++;
+  if(st.qNum>=TOTAL){showResults();return;}
+  await loadQ();
+}
+
+function showResults(){
+  show('s-res');
+  document.getElementById('res-pts').textContent=st.score;
+  const pct=Math.round(st.correct/TOTAL*100);
+  const msgs=['Sigue practicando','Buen esfuerzo','¡Muy bien!','¡Excelente!'];
+  document.getElementById('res-msg').textContent=`puntos — ${pct}% · ${msgs[Math.floor(pct/26)]}`;
+  document.getElementById('res-ok').textContent=st.correct;
+  document.getElementById('res-bad').textContent=st.wrong;
+  document.getElementById('res-stk').textContent=st.maxStreak;
+}
+
+function updateHdr(){
+  document.getElementById('hdr-pts').textContent=st.score+' pts';
+  document.getElementById('hdr-streak').textContent=st.streak>1?`🔥 x${st.streak}`:'';
+}
+
+function goHome(){show('s-home')}
+
+function fallback(topic){
+  const pool={
+    cinematica:{subtopic:'MRUV · aceleración',formula_hint:'v = v₀ + ___ · t',extra_hint:'El espacio en blanco es la aceleración',problem:'Un auto parte del reposo y en 8 s alcanza 24 m/s. ¿Cuál es su aceleración?',answer:'3 m/s²',answer_numeric:3,tolerance:5,steps:['a=(v-v₀)/t','a=(24-0)/8','a=3 m/s²']},
+    dinamica:{subtopic:'Segunda Ley de Newton',formula_hint:'F = ___ · a',extra_hint:'El espacio en blanco es la masa',problem:'75 N produce 2.5 m/s². ¿Cuál es la masa?',answer:'30 kg',answer_numeric:30,tolerance:5,steps:['m=F/a','m=75/2.5','m=30 kg']},
+    trabajo:{subtopic:'Energía cinética',formula_hint:'Ec = ½ · m · ___²',extra_hint:'El espacio en blanco es la velocidad',problem:'Un objeto de 4 kg tiene Ec=200 J. ¿Cuál es su velocidad?',answer:'10 m/s',answer_numeric:10,tolerance:5,steps:['v=√(2Ec/m)','v=√(400/4)','v=10 m/s']},
+    electricidad:{subtopic:'Ley de Ohm',formula_hint:'V = ___ · R',extra_hint:'El espacio en blanco es la corriente',problem:'R=330 Ω, I=0.03 A. ¿Cuál es el voltaje?',answer:'9.9 V',answer_numeric:9.9,tolerance:5,steps:['V=I·R','V=0.03·330','V=9.9 V']},
+    termodinamica:{subtopic:'Gas ideal',formula_hint:'PV = nR · ___',extra_hint:'El espacio en blanco es la temperatura',problem:'2 mol, 1 atm, 49.2 L. R=8.314. ¿T?',answer:'300 K',answer_numeric:300,tolerance:5,steps:['T=PV/(nR)','T=(101325·0.0492)/(2·8.314)','T≈300 K']},
+    ondas:{subtopic:'Velocidad de onda',formula_hint:'v = ___ · f',extra_hint:'El espacio en blanco es la longitud de onda',problem:'f=440 Hz, v=340 m/s. ¿Cuál es λ?',answer:'0.77 m',answer_numeric:0.77,tolerance:5,steps:['λ=v/f','λ=340/440','λ≈0.77 m']},
+    optica:{subtopic:'Ley de Snell',formula_hint:'n₁ · sin(θ₁) = ___ · sin(θ₂)',extra_hint:'El espacio en blanco es n₂',problem:'n₁=1.0, θ₁=30°, θ₂=19.5°. ¿n₂?',answer:'1.5',answer_numeric:1.5,tolerance:5,steps:['n₂=n₁·sin30°/sin19.5°','n₂=0.5/0.333','n₂≈1.5']},
+    cantidad:{subtopic:'Cantidad de movimiento',formula_hint:'p = ___ · v',extra_hint:'El espacio en blanco es la masa',problem:'p=90 kg·m/s, v=6 m/s. ¿m?',answer:'15 kg',answer_numeric:15,tolerance:5,steps:['m=p/v','m=90/6','m=15 kg']}
+  };
+  return pool[topic]||pool.cinematica;
+}
+</script>
+</body>
+</html>
